@@ -1,16 +1,17 @@
-// Load environment variables
 require('dotenv').config();
 
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-
-// Firebase Admin
 const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json'); // path to your Firebase service account key
 
+// Initialize Firebase Admin SDK using environment variables
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL
+  })
 });
 
 const db = admin.firestore();
@@ -19,22 +20,18 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- POST route: Add a visitor ---
 app.post("/visitors", async (req, res) => {
   try {
     const { name, phone, purpose } = req.body;
-
     if (!name || !phone || !purpose) {
       return res.status(400).json({ status: "error", message: "All fields are required" });
     }
-
     const docRef = await db.collection("visitors").add({
       name,
       phone,
       purpose,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
     res.status(200).json({
       status: "success",
       message: `Visitor ${name} created ✅`,
@@ -46,12 +43,10 @@ app.post("/visitors", async (req, res) => {
   }
 });
 
-// --- GET route: Fetch all visitors ---
 app.get("/visitors", async (req, res) => {
   try {
     const snapshot = await db.collection("visitors").orderBy("createdAt", "desc").get();
     const visitors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
     res.status(200).json({
       status: "success",
       data: visitors,
@@ -62,7 +57,6 @@ app.get("/visitors", async (req, res) => {
   }
 });
 
-// --- DELETE route: Delete a visitor ---
 app.delete("/visitors/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -74,23 +68,19 @@ app.delete("/visitors/:id", async (req, res) => {
   }
 });
 
-// --- PUT route: Update a visitor ---
 app.put("/visitors/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { name, phone, purpose } = req.body;
-
     if (!name || !phone || !purpose) {
       return res.status(400).json({ status: "error", message: "All fields are required" });
     }
-
     await db.collection("visitors").doc(id).update({
       name,
       phone,
       purpose,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
     res.status(200).json({ status: "success", message: "Visitor updated ✅" });
   } catch (error) {
     console.error(error);
@@ -98,7 +88,6 @@ app.put("/visitors/:id", async (req, res) => {
   }
 });
 
-// --- Start server ---
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
