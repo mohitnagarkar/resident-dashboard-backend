@@ -20,6 +20,12 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Root route — to test backend
+app.get("/", (req, res) => {
+  res.send("Backend is running ✅");
+});
+
+// --- POST route: Add a visitor ---
 app.post("/visitors", async (req, res) => {
   try {
     const { name, phone, purpose } = req.body;
@@ -43,6 +49,7 @@ app.post("/visitors", async (req, res) => {
   }
 });
 
+// --- GET route: Fetch all visitors ---
 app.get("/visitors", async (req, res) => {
   try {
     const snapshot = await db.collection("visitors").orderBy("createdAt", "desc").get();
@@ -57,6 +64,7 @@ app.get("/visitors", async (req, res) => {
   }
 });
 
+// --- DELETE route: Delete a visitor ---
 app.delete("/visitors/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -68,6 +76,7 @@ app.delete("/visitors/:id", async (req, res) => {
   }
 });
 
+// --- PUT route: Update a visitor ---
 app.put("/visitors/:id", async (req, res) => {
   try {
     const { id } = req.params;
