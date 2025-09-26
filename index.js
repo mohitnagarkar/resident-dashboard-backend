@@ -1,23 +1,19 @@
-require('dotenv').config();
+require("dotenv").config();
 
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const admin = require('firebase-admin');
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const admin = require("firebase-admin");
 
-// Firebase Admin initialization
-try {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL
-    })
-  });
-  console.log("✅ Firebase initialized successfully");
-} catch (error) {
-  console.error("❌ Firebase initialization failed:", error);
-}
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY
+      ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
+      : undefined,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL
+  })
+});
 
 const db = admin.firestore();
 
@@ -25,12 +21,10 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Root route
 app.get("/", (req, res) => {
   res.send("Backend is running ✅");
 });
 
-// POST — Add visitor
 app.post("/visitors", async (req, res) => {
   try {
     const { name, phone, purpose } = req.body;
@@ -49,36 +43,33 @@ app.post("/visitors", async (req, res) => {
       data: { id: docRef.id, name, phone, purpose }
     });
   } catch (error) {
-    console.error("Error adding visitor:", error);
+    console.error(error);
     res.status(500).json({ status: "error", message: error.message });
   }
 });
 
-// GET — Fetch all visitors
 app.get("/visitors", async (req, res) => {
   try {
     const snapshot = await db.collection("visitors").orderBy("createdAt", "desc").get();
     const visitors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.status(200).json({ status: "success", data: visitors });
   } catch (error) {
-    console.error("Error fetching visitors:", error);
-    res.status(500).json({ status: "error", message: error.message });
+    console.error(error);
+    res.status(500).json({ status: "error", message: "Failed to fetch visitors. Try again later." });
   }
 });
 
-// DELETE — Remove visitor
 app.delete("/visitors/:id", async (req, res) => {
   try {
     const { id } = req.params;
     await db.collection("visitors").doc(id).delete();
     res.status(200).json({ status: "success", message: "Visitor deleted ✅" });
   } catch (error) {
-    console.error("Error deleting visitor:", error);
+    console.error(error);
     res.status(500).json({ status: "error", message: error.message });
   }
 });
 
-// PUT — Update visitor
 app.put("/visitors/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -94,7 +85,7 @@ app.put("/visitors/:id", async (req, res) => {
     });
     res.status(200).json({ status: "success", message: "Visitor updated ✅" });
   } catch (error) {
-    console.error("Error updating visitor:", error);
+    console.error(error);
     res.status(500).json({ status: "error", message: error.message });
   }
 });
