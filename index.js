@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin
+// Firebase Admin initialization
 try {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -25,27 +25,24 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Root route — to test backend
+// Root route
 app.get("/", (req, res) => {
   res.send("Backend is running ✅");
 });
 
-// --- POST route: Add a visitor ---
+// POST — Add visitor
 app.post("/visitors", async (req, res) => {
   try {
     const { name, phone, purpose } = req.body;
-
     if (!name || !phone || !purpose) {
       return res.status(400).json({ status: "error", message: "All fields are required" });
     }
-
     const docRef = await db.collection("visitors").add({
       name,
       phone,
       purpose,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
-
     res.status(200).json({
       status: "success",
       message: `Visitor ${name} created ✅`,
@@ -53,61 +50,52 @@ app.post("/visitors", async (req, res) => {
     });
   } catch (error) {
     console.error("Error adding visitor:", error);
-    res.status(500).json({ status: "error", message: "Failed to add/update visitor. Try again later." });
+    res.status(500).json({ status: "error", message: error.message });
   }
 });
 
-// --- GET route: Fetch all visitors ---
+// GET — Fetch all visitors
 app.get("/visitors", async (req, res) => {
   try {
     const snapshot = await db.collection("visitors").orderBy("createdAt", "desc").get();
     const visitors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    res.status(200).json({
-      status: "success",
-      data: visitors
-    });
+    res.status(200).json({ status: "success", data: visitors });
   } catch (error) {
     console.error("Error fetching visitors:", error);
-    res.status(500).json({ status: "error", message: "Failed to fetch visitors. Try again later." });
+    res.status(500).json({ status: "error", message: error.message });
   }
 });
 
-// --- DELETE route: Delete a visitor ---
+// DELETE — Remove visitor
 app.delete("/visitors/:id", async (req, res) => {
   try {
     const { id } = req.params;
-
     await db.collection("visitors").doc(id).delete();
-
     res.status(200).json({ status: "success", message: "Visitor deleted ✅" });
   } catch (error) {
     console.error("Error deleting visitor:", error);
-    res.status(500).json({ status: "error", message: "Failed to delete visitor. Try again later." });
+    res.status(500).json({ status: "error", message: error.message });
   }
 });
 
-// --- PUT route: Update a visitor ---
+// PUT — Update visitor
 app.put("/visitors/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { name, phone, purpose } = req.body;
-
     if (!name || !phone || !purpose) {
       return res.status(400).json({ status: "error", message: "All fields are required" });
     }
-
     await db.collection("visitors").doc(id).update({
       name,
       phone,
       purpose,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
-
     res.status(200).json({ status: "success", message: "Visitor updated ✅" });
   } catch (error) {
     console.error("Error updating visitor:", error);
-    res.status(500).json({ status: "error", message: "Failed to update visitor. Try again later." });
+    res.status(500).json({ status: "error", message: error.message });
   }
 });
 
