@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test /parse-message API</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px 0;
+    }
+    button {
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+    .result pre {
+      background: #f0f0f0;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Test /parse-message API</h1>
+
+  <label for="message">Enter Message:</label><br>
+  <input type="text" id="message" placeholder="e.g., Approve visitor John Doe" size="50">
+  <button onclick="sendMessage()">Send</button>
+
+  <div class="result" id="result" style="display:none;">
+    <h3>Response:</h3>
+    <pre id="parsed"></pre>
+    <pre id="actionResult"></pre>
+  </div>
+
+  <script>
+    async function sendMessage() {
+      const message = document.getElementById('message').value.trim();
+      if (!message) return alert('Please enter a message!');
+
+      try {
+        const response = await fetch('http://localhost:8080/parse-message', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('parsed').textContent = "Parsed Action:\n" + JSON.stringify(data.parsed, null, 2);
+        document.getElementById('actionResult').textContent = "Action Result:\n" + JSON.stringify(data.actionResult, null, 2);
+
+      } catch (err) {
+        alert('Error connecting to backend: ' + err.message);
+      }
+    }
+  </script>
+
+</body>
+</html>
